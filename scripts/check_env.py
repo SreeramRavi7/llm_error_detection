@@ -34,10 +34,11 @@ def main():
 
     row = load("triviaqa", n=5)[0]
     msgs = build_messages(row.dataset, row.question)
-    ids = tok.apply_chat_template(msgs, add_generation_prompt=True, return_tensors="pt").to(model.device)
+    enc = tok.apply_chat_template(msgs, add_generation_prompt=True, return_tensors="pt",
+                                  return_dict=True).to(model.device)
     t0 = time.time()
-    out = model.generate(ids, max_new_tokens=max_new_tokens(row.dataset), do_sample=False)
-    ans = tok.decode(out[0, ids.shape[1]:], skip_special_tokens=True).strip()
+    out = model.generate(**enc, max_new_tokens=max_new_tokens(row.dataset), do_sample=False)
+    ans = tok.decode(out[0, enc["input_ids"].shape[1]:], skip_special_tokens=True).strip()
     print(f"Q: {row.question}\nA: {ans}\nGold: {row.gold_answers[:3]}  correct={grade(row.dataset, ans, row.gold_answers)}")
     print(f"generation took {time.time() - t0:.1f}s")
     print("ALL GOOD")
