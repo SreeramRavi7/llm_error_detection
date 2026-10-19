@@ -24,6 +24,8 @@ class Row:
     model: Optional[str] = None
     greedy_answer: Optional[str] = None
     correct: Optional[int] = None     # 1 = right, 0 = wrong. Label for everything else is wrong = 1 - correct
+    n_answer_tokens: Optional[int] = None
+    greedy_time_s: Optional[float] = None  # GPU seconds for the greedy pass + feature pass, per question
 
     # Stage 1b: baselines (Sreeram)
     mean_logprob: Optional[float] = None
