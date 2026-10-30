@@ -9,9 +9,10 @@ SYSTEM = "You are a helpful assistant."
 
 TRIVIA_INSTRUCTION = "Answer the question with a short answer only, no explanation.\nQuestion: {q}\nAnswer:"
 
+# Qwen and Llama are both trained on the \boxed{} format, they mostly ignored '####'
 GSM8K_INSTRUCTION = (
-    "Solve the problem step by step. End with the final answer on its own line "
-    "in the form '#### <number>'.\nProblem: {q}"
+    "Solve the problem step by step, briefly. "
+    "Put the final answer, a single number, within \\boxed{{}}.\nProblem: {q}"
 )
 
 VERBAL_CONF = (
@@ -28,4 +29,4 @@ def build_messages(dataset, question):
 
 
 def max_new_tokens(dataset):
-    return 32 if dataset == "triviaqa" else 384
+    return 32 if dataset == "triviaqa" else 640   # 384 cut off 12% of answers

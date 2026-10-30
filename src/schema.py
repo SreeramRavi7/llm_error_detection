@@ -1,7 +1,7 @@
 """Shared data format. Everyone reads and writes rows in this shape.
 
 One .jsonl file per (model, dataset), e.g. outputs/qwen1.5b_triviaqa.jsonl
-Hidden states go in a matching .npy file, row i of the .npy = line i of the .jsonl.
+Hidden states go in a matching .npz file, row i of the .npz = line i of the .jsonl.
 
 Fields get filled in stages. A field is None until its stage has run.
 """

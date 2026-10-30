@@ -33,7 +33,7 @@ src/
   grading.py   right/wrong checks for both datasets
 scripts/       runnable steps (check_env now, more per phase)
 tests/         run before every push
-outputs/       generated .jsonl and .npy files (not committed, share via Drive)
+outputs/       generated .jsonl and .npz files (not committed, share via Drive)
 ```
 
 ## Rules so we don't break each other's work
@@ -41,7 +41,7 @@ outputs/       generated .jsonl and .npy files (not committed, share via Drive)
 - Everyone uses the `Row` format in `src/schema.py`. Add a field there if you need one, don't make side files.
 - Never change the split (`SEED` in `data.py`) once we start generating.
 - Prompts only change in `src/prompts.py`, and tell the group if you do.
-- Hidden states: `outputs/<model>_<dataset>_hidden.npy`, row i matches line i of the `.jsonl`.
+- Hidden states: `outputs/<model>_<dataset>_<tag>_hidden.npz`, row i matches line i of the `.jsonl`.
 - Big files go in the shared Drive folder, not git.
 
 ## Who does what

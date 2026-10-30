@@ -27,3 +27,13 @@ def test_gsm8k_numbers():
     assert grade("gsm8k", "#### 3.50", ["3.5"]) == 1
     assert grade("gsm8k", "no number here", ["42"]) == 0
     assert grade("gsm8k", "#### -7", ["-7"]) == 1
+
+
+def test_gsm8k_final_answer_formats():
+    # real pilot endings that the old last-number rule got wrong
+    assert grade("gsm8k", "\\[ x = 60 \\] So, Jason should add **60 grams** when using 900 ml.", ["60"]) == 1
+    assert grade("gsm8k", "37 x 11 = 407. Ms. Alice can grade **407** papers in 11 hours.", ["407"]) == 1
+    assert grade("gsm8k", "The final answer is: \\[ \\boxed{87} \\] after 3 steps", ["87"]) == 1
+    assert grade("gsm8k", "total is $\\boxed{1552.50}$.", ["15525"]) == 0
+    assert grade("gsm8k", "Final Answer: #### 16000", ["5,600"]) == 0
+    assert grade("gsm8k", "**Step 3:** add them\n4 + 8 = 12", ["12"]) == 1   # bold header, not the answer
