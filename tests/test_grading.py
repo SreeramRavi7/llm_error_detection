@@ -37,3 +37,10 @@ def test_gsm8k_final_answer_formats():
     assert grade("gsm8k", "total is $\\boxed{1552.50}$.", ["15525"]) == 0
     assert grade("gsm8k", "Final Answer: #### 16000", ["5,600"]) == 0
     assert grade("gsm8k", "**Step 3:** add them\n4 + 8 = 12", ["12"]) == 1   # bold header, not the answer
+
+
+def test_gsm8k_unboxed_last_sentence():
+    assert grade("gsm8k", "work...\nSo, Ginger needs 650 straws to make 10 mats.", ["650"]) == 1
+    assert grade("gsm8k", "work...\nSo, Gail has 2 $10 bills in her wallet.", ["2"]) == 1
+    assert grade("gsm8k", "Total is 17. So, there are 10 boys and 7 girls left.", ["17"]) == 0   # only last sentence counts
+    assert grade("gsm8k", "the answer is \\boxed{8} cans in 480 minutes", ["480"]) == 0          # boxed is strict

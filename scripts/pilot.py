@@ -106,6 +106,12 @@ def main():
                 save(done, hq, ha, paths)
         save(done, hq, ha, paths)
 
+    # Regrade with the current grader, so a grading fix only needs a rerun of this
+    # command (no new generation, it resumes and skips straight here)
+    for r in done:
+        r.correct = grade(r.dataset, r.greedy_answer, r.gold_answers)
+    write_jsonl(done, paths["jsonl"])
+
     text = summarize(done, np.stack(hq), np.stack(ha), paths["csv"])
     with open(paths["txt"], "w") as f:
         f.write(text + "\n")

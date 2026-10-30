@@ -2,10 +2,9 @@
 
 TriviaQA: normalize text (lowercase, drop articles/punctuation) and check
 whether any gold alias appears in the answer, or the answer equals an alias.
-GSM8K: find the final answer and compare numbers. Order of preference:
-\boxed{...}, then text after "####", then a **bold** number on the last line,
-then the last number anywhere. The model often ignores the format we ask for,
-and just taking the last number fails on endings like "480 cans in 8 hours".
+GSM8K: if the answer has \boxed{...} or "####", compare that number exactly.
+Otherwise the model ignored the format, so count it right if the gold number
+appears in its last sentence ("480 cans of soda in 8 hours" -> 480 or 8).
 """
 
 import re
@@ -56,12 +55,29 @@ def extract_number(text: str):
         return None
 
 
+def _to_float(n):
+    try:
+        return float(n.replace(",", "").rstrip("."))
+    except ValueError:
+        return None
+
+
+def last_sentence(text: str) -> str:
+    line = text.strip().split("\n")[-1]
+    return re.split(r"(?<=[.!?])\s+(?=[A-Z])", line)[-1]
+
+
 def grade_gsm8k(answer: str, gold_answers: list) -> int:
-    pred = extract_number(answer)
     gold = extract_number(str(gold_answers[0]))
-    if pred is None or gold is None:
+    if gold is None:
         return 0
-    return int(abs(pred - gold) < 1e-6)
+    if _BOXED.search(answer) or "####" in answer:
+        pred = extract_number(answer)
+        return int(pred is not None and abs(pred - gold) < 1e-6)
+    # No marked answer (about 40% of Qwen replies). Endings like "480 cans in 8 hours"
+    # put the answer anywhere in the sentence, so accept gold if it is in the last sentence.
+    nums = [_to_float(n) for n in _NUM.findall(last_sentence(answer))]
+    return int(any(n is not None and abs(n - gold) < 1e-6 for n in nums))
 
 
 def grade(dataset: str, answer: str, gold_answers: list) -> int:
