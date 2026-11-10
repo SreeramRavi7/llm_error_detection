@@ -45,10 +45,20 @@ def quick_probe(h, wrong, layers, folds=5, seed=0):
 
 
 def summarize(rows, h_question=None, h_answer=None, csv_path=None):
+    from .schema import keep_mask
+    keep = np.array(keep_mask(rows), dtype=bool)
+    n_dup = int((~keep).sum())
+    if n_dup:
+        rows = [r for r, k in zip(rows, keep) if k]
+        h_question = None if h_question is None else h_question[keep]
+        h_answer = None if h_answer is None else h_answer[keep]
+
     wrong = [1 - r.correct for r in rows]
     acc = sum(r.correct for r in rows) / len(rows)
     n_conf = sum(r.verbal_conf is not None for r in rows)
     lines = [f"{len(rows)} rows | accuracy {acc:.1%} | wrong {sum(wrong)}"]
+    if n_dup:
+        lines.append(f"Dropped {n_dup} repeated question ids (kept the first copy)")
 
     lp = [None if r.mean_logprob is None else -r.mean_logprob for r in rows]
     vc = [None if r.verbal_conf is None else -r.verbal_conf for r in rows]

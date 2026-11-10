@@ -56,3 +56,11 @@ def test_summarize_and_roundtrip(tmp_path):
     text = summarize(rows, h, h, str(tmp_path / "check.csv"))
     assert "accuracy" in text and "Quick probe" in text
     assert (tmp_path / "check.csv").read_text().count("\n") == 31
+
+
+def test_keep_mask_drops_repeats():
+    from src.schema import Row, keep_mask
+    rows = [Row(id=i, dataset="triviaqa", question="q", gold_answers=["a"], split="train")
+            for i in ["a", "b", "a", "c", "b"]]
+    assert keep_mask(rows) == [True, True, False, True, False]
+    assert keep_mask([{"id": "x"}, {"id": "x"}]) == [True, False]

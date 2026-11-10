@@ -48,3 +48,20 @@ def write_jsonl(rows, path):
 def read_jsonl(path):
     with open(path) as f:
         return [Row(**json.loads(line)) for line in f if line.strip()]
+
+
+def keep_mask(rows):
+    """True for the first row of each id, False for repeats.
+
+    TriviaQA's validation split lists about 12% of questions twice (same id, same
+    question). Greedy decoding gives the twin the same answer and hidden states, so a
+    test row can have an exact copy in train. Apply this before training or scoring:
+        keep = keep_mask(rows); rows = [r for r, k in zip(rows, keep) if k]; h = h[keep]
+    """
+    seen = set()
+    out = []
+    for r in rows:
+        rid = r.id if isinstance(r, Row) else r["id"]
+        out.append(rid not in seen)
+        seen.add(rid)
+    return out
