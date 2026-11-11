@@ -31,9 +31,11 @@ class Row:
     mean_logprob: Optional[float] = None
     verbal_conf: Optional[float] = None   # 0 to 100, None if the model gave no number
 
-    # Stage 2: sampling (Name 2)
+    # Stage 2: sampling + semantic entropy (Sreeram), test split only
     samples: list = field(default_factory=list)
     semantic_entropy: Optional[float] = None
+    n_clusters: Optional[int] = None
+    se_time_s: Optional[float] = None     # GPU seconds per question for the k samples
 
     # Stage 2: probe score, filled at eval time (Trish)
     probe_score: Optional[float] = None

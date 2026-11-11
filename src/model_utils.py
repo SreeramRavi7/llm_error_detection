@@ -65,3 +65,25 @@ def feature_pass(model, prompt_ids, answer_ids):
         tgt = full[0, q_pos + 1:a_pos + 1]
         mean_lp = lp.gather(1, tgt[:, None]).mean().item()
     return mean_lp, h_q, h_a
+
+
+@torch.no_grad()
+def sample_batch(tok, model, stop_ids, message_lists, max_new_tokens, k, temperature=1.0):
+    """k sampled answers per prompt (plain temperature sampling, no top-k/top-p).
+
+    Returns a list (one per prompt) of (answers, n_hit_limit)."""
+    texts = [tok.apply_chat_template(m, add_generation_prompt=True, tokenize=False) for m in message_lists]
+    enc = tok(texts, return_tensors="pt", padding=True, add_special_tokens=False).to(model.device)
+    out = model.generate(**enc, max_new_tokens=max_new_tokens, do_sample=True, temperature=temperature,
+                         top_p=1.0, top_k=0, num_return_sequences=k, pad_token_id=tok.pad_token_id)
+    plen = enc["input_ids"].shape[1]
+    res = []
+    for i in range(len(texts)):
+        answers, hit = [], 0
+        for j in range(k):
+            gen = out[i * k + j, plen:].tolist()
+            a = cut_at_eos(gen, stop_ids)
+            hit += len(a) >= max_new_tokens
+            answers.append(tok.decode(a, skip_special_tokens=True).strip())
+        res.append((answers, hit))
+    return res

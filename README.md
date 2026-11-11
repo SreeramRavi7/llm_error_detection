@@ -50,7 +50,7 @@ outputs/       generated .jsonl and .npz files (not committed, share via Drive)
 |---|---|---|
 | 1 | Generate greedy answers, grade, baselines, save hidden states | Sreeram |
 | 2 | Probes per layer, layer study | Trish |
-| 2 | Sampling + semantic entropy | Name 2 |
+| 2 | Sampling + semantic entropy | Sreeram |
 | 3 | Head-to-head, cost study, transfer | All |
 
 ## Next step
@@ -58,3 +58,21 @@ outputs/       generated .jsonl and .npz files (not committed, share via Drive)
 Pilot on 200 TriviaQA + 200 GSM8K questions before running everything.
 We need a decent mix of right and wrong answers, and we need to hand-check
 about 30 grades per dataset to make sure grading isn't broken.
+
+## Phase 2 commands
+
+Both read the Phase 1 files (`--tag full`) from `outputs/` and drop repeated TriviaQA ids first.
+
+**Probes (no GPU):** layer study, best layer picked on train CV, test AUROC with 95% bootstrap CIs.
+```bash
+python -m scripts.probe --dataset triviaqa --model qwen1.5b
+python -m scripts.probe --dataset gsm8k --model qwen1.5b --train-dataset triviaqa   # transfer
+```
+
+**Semantic entropy (GPU):** 10 samples per test question, clustered by meaning.
+```bash
+python -m scripts.sample --dataset triviaqa --model qwen1.5b --limit 20   # quick test first
+python -m scripts.sample --dataset triviaqa --model qwen1.5b
+python -m scripts.sample --dataset gsm8k --model qwen1.5b
+```
+Add `--nli` on TriviaQA to cluster with DeBERTa NLI (the original method) instead of string matching.
