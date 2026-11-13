@@ -6,7 +6,7 @@ split, samples k answers per question, clusters them by meaning, and scores the 
     python -m scripts.sample --dataset triviaqa --model qwen1.5b
     python -m scripts.sample --dataset gsm8k --model llama3b
 
-Writes <model>_<dataset>_<tag>_se.jsonl (test rows with samples, semantic_entropy, n_clusters,
+Writes <model>_<dataset>_<tag>_se.jsonl (_se_t0.7.jsonl etc. if --temperature is not 1.0) (test rows with samples, semantic_entropy, n_clusters,
 se_time_s) and _se_summary.txt. Saves as it goes and resumes after a crash.
 """
 
@@ -20,12 +20,18 @@ from tqdm import tqdm
 from src.features import chunks
 from src.model_utils import load_model, sample_batch
 from src.prompts import build_messages, max_new_tokens
+from src.grading import grade
 from src.report import auroc
 from src.schema import keep_mask, read_jsonl, write_jsonl
 from src.semantic import cluster_answers, discrete_entropy
 
 
-def summarize(rows, k):
+def sample_acc(rows):
+    n = sum(len(r.samples) for r in rows)
+    return sum(grade(r.dataset, a, r.gold_answers) for r in rows for a in r.samples) / max(1, n)
+
+
+def summarize(rows, k, temperature):
     wrong = [1 - r.correct for r in rows]
     se = [r.semantic_entropy for r in rows]
     lp = [None if r.mean_logprob is None else -r.mean_logprob for r in rows]
@@ -33,10 +39,11 @@ def summarize(rows, k):
     t_se = sum(r.se_time_s for r in rows) / len(rows)
     t_g = sum(r.greedy_time_s or 0 for r in rows) / len(rows)
     lines = [
-        f"{len(rows)} test rows | accuracy {1 - sum(wrong) / len(rows):.1%} | wrong {sum(wrong)} | k={k}",
+        f"{len(rows)} test rows | accuracy {1 - sum(wrong) / len(rows):.1%} | wrong {sum(wrong)} | k={k} | temperature {temperature}",
         f"AUROC semantic entropy:       {auroc(se, wrong):.3f}",
         f"AUROC token log-prob:         {auroc(lp, wrong):.3f}   (same rows)",
         f"AUROC stated confidence:      {auroc(vc, wrong):.3f}   (same rows)",
+        f"Sample accuracy:              {sample_acc(rows):.1%}   (greedy {1 - sum(wrong) / len(rows):.1%}; far below greedy = samples too random, lower --temperature)",
         f"Mean clusters per question:   {sum(r.n_clusters for r in rows) / len(rows):.2f}",
         f"All {k} samples agree:          {sum(r.n_clusters == 1 for r in rows) / len(rows):.1%} of questions",
         f"GPU s/question: greedy+features {t_g:.2f} | sampling {t_se:.2f}",
@@ -68,7 +75,8 @@ def main():
         rows = rows[:args.limit]
 
     os.makedirs(args.out_dir, exist_ok=True)
-    out_path = os.path.join(args.out_dir, base + "_se.jsonl")
+    se_base = base + "_se" + ("" if args.temperature == 1.0 else f"_t{args.temperature:g}")
+    out_path = os.path.join(args.out_dir, se_base + ".jsonl")
     done = read_jsonl(out_path) if os.path.exists(out_path) else []
     done_ids = {r.id for r in done}
     todo = [r for r in rows if r.id not in done_ids]
@@ -102,9 +110,9 @@ def main():
         if hit_total:
             print(f"NOTE: {hit_total} samples hit the {limit}-token limit")
 
-    text = summarize(done, args.k)
+    text = summarize(done, args.k, args.temperature)
     print("\n" + text)
-    with open(os.path.join(args.out_dir, base + "_se_summary.txt"), "w") as f:
+    with open(os.path.join(args.out_dir, se_base + "_summary.txt"), "w") as f:
         f.write(text + "\n")
 
 

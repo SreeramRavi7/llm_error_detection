@@ -11,10 +11,11 @@ from .grading import normalize
 
 
 class NLIClusterer:
+    # float32 on purpose: DeBERTa v1 attention breaks in fp16 ("expected Float but found Half")
     def __init__(self, name="microsoft/deberta-large-mnli"):
         self.tok = AutoTokenizer.from_pretrained(name)
         self.model = AutoModelForSequenceClassification.from_pretrained(
-            name, torch_dtype=torch.float16).to("cuda" if torch.cuda.is_available() else "cpu").eval()
+            name).to("cuda" if torch.cuda.is_available() else "cpu").eval()
         labels = {v.lower(): k for k, v in self.model.config.id2label.items()}
         self.entail = labels["entailment"]
 
