@@ -4,3 +4,4 @@ __pycache__/
 .venv/
 *.npy
 .ipynb_checkpoints/
+results/
